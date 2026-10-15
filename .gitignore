@@ -1,0 +1,46 @@
+# ============================================================
+#  MPMQA RAG 仓库忽略规则
+#  说明：data/ 约 201MB，且全部可由 data/docs/ 下的 .docx 重新生成，
+#        因此默认不入库。克隆后按 README 的「快速开始」第 1~2 步重建。
+# ============================================================
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# ---------- 日志 ----------
+# deploy/common.sh 默认 LOG_DIR=$HOME/logs，一般落在仓库外，这里兜底
+logs/
+*.log
+
+# ---------- 编辑器 / 系统 ----------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ---------- 数据：手册原稿（内部资料，谨慎公开）----------
+data/docs/*/*.docx
+data/docs/*/*.doc
+# 其他手册格式按需补充，例如 pdf ：
+# data/docs/*/*.pdf
+
+# ---------- 数据：切片产物（docx_parser.py 生成）----------
+data/docs/*_json/
+
+# ---------- 数据：抽出的插图（docx_parser.py 生成，约 97MB）----------
+data/images/
+
+# ---------- 数据：向量库（indexer.py 生成，换 embedding 模型需重建）----------
+data/chroma_db/
+
+# ---------- 数据：评测测试集（业务问答对）----------
+# 若希望仓库自带这份评测集，把下面这行注释掉即可（约 176KB）
+data/test/

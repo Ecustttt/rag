@@ -1,0 +1,25 @@
+默认（和原脚本等效）
+bash deploy/deploy_all.sh
+
+只重启 chat
+bash deploy/deploy_chat.sh
+
+======================================================
+
+自定义端口/模型
+CHAT_PORT=8010 CHAT_MODEL=~/models/AnotherModel bash deploy/deploy_chat.sh
+
+# 或 export 后跑
+export CHAT_PORT=8010
+bash deploy/deploy_all.sh
+
+======================================================
+
+多数据集/多实例
+# GWM 一套
+CHAT_PORT=8000 EMB_PORT=8001 bash deploy/deploy_all.sh
+
+# MDM 另一套（不同 GPU 或同 GPU 改显存配比）
+CHAT_PORT=8010 EMB_PORT=8011 \
+  CHAT_GPU_UTIL=0.3 EMB_GPU_UTIL=0.15 \
+  bash deploy/deploy_all.sh

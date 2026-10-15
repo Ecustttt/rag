@@ -1,0 +1,31 @@
+# 0. 起模型服务
+bash deploy/deploy_all.sh
+
+# 1. 切片
+python ingestion/docx_parser.py --dataset GWM/MDM
+
+# 2. 入库
+python ingestion/indexer.py --dataset GWM/MDM
+
+# 3. 后端
+# GWM 后端
+python backend/api.py --dataset GWM --port 8002
+
+# MDM 后端
+python backend/api.py --dataset MDM --port 8003
+
+# 4. 前端
+streamlit run frontend/app.py --server.port 8501 -- \
+  --api-url http://127.0.0.1:8002/ask \
+  --image-base ./data/images/GWM/ \
+  --title-suffix "[GWM]"
+
+
+streamlit run frontend/app.py --server.port 8502 -- \
+  --api-url http://127.0.0.1:8003/ask \
+  --image-base ./data/images/MDM/ \
+  --title-suffix "[MDM]"
+
+
+# ragas检索模式
+python eval/eval_ragas.py --dataset GWM --mode vector

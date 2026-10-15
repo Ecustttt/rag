@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1960" height="1580" viewBox="0 0 1960 1580" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC','Source Han Sans SC',SimHei,sans-serif">
+<defs>
+<marker id="mk" viewBox="0 0 10 10" refX="9.4" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0.8 L 9.6 5 L 0 9.2 z" fill="#6b7280"/></marker>
+</defs>
+<rect x="0" y="0" width="1960" height="1580" fill="#ffffff"/>
+<text x="64" y="72" font-size="30" font-weight="bold" fill="#111827">MPMQA RAG 系统架构</text>
+<text x="64" y="106" font-size="14" fill="#4b5563">覆盖 切片 → 入库 → 模型部署 → 后端 → 前端 → 评估 全流程　|　多数据集隔离：GWM / MDM（--dataset 驱动 collection / 路径 / 端口）</text>
+<rect x="40" y="140" width="1480" height="360" rx="14" fill="#f3f7fd" stroke="#c3d8ee" stroke-width="1.2"/>
+<text x="64" y="174" font-size="14" font-weight="bold" fill="#2b5c8a">① 离线阶段 · 切片 + 入库</text>
+<rect x="40" y="540" width="1480" height="660" rx="14" fill="#fdf6ec" stroke="#efd6b4" stroke-width="1.2"/>
+<text x="64" y="574" font-size="14" font-weight="bold" fill="#a5601a">② 在线服务 · Streamlit 前端 + FastAPI 后端</text>
+<rect x="40" y="1240" width="1480" height="240" rx="14" fill="#f5f1fc" stroke="#dccff0" stroke-width="1.2"/>
+<text x="64" y="1274" font-size="14" font-weight="bold" fill="#6b46a8">③ 评估 · 跑批测试（Ragas）</text>
+<rect x="1560" y="140" width="360" height="1300" rx="14" fill="#f1faf4" stroke="#c6e5d2" stroke-width="1.2"/>
+<text x="1584" y="174" font-size="14" font-weight="bold" fill="#2b7a4b">④ 模型部署 · deploy/*.sh</text>
+<text x="1584" y="196" font-size="11.5" fill="#4b5563">vLLM · OpenAI 兼容 API</text>
+<polyline points="310,260 370,260" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="640,260 700,260" fill="none" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#mk)"/>
+<polyline points="505,300 505,325 195,325 195,350" fill="none" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#mk)"/>
+<polyline points="940,260 990,260" fill="none" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#mk)"/>
+<polyline points="1230,260 1290,260" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="1110,220 1110,180 1535,180 1535,500 1580,500" fill="none" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#mk)"/>
+<polyline points="195,430 195,690" fill="none" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#mk)"/>
+<polyline points="380,800 450,800" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="680,800 710,800" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="940,800 970,800" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="1200,800 1230,800" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="1345,865 1345,1000" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="1230,1060 230,1060 230,890" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="880,735 880,520 1545,520 1545,315 1580,315" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="1085,735 1085,505 1515,505 1515,545 1580,545" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="340,1355 400,1355" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="680,1355 740,1355" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="1040,1355 1100,1355" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="540,1300 540,1185" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#mk)"/>
+<polyline points="1480,1355 1540,1355 1540,620 1700,620 1700,590" fill="none" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#mk)"/>
+<rect x="80" y="220" width="230" height="80" rx="9" fill="#ffffff" stroke="#2b5c8a" stroke-width="1.3"/>
+<text x="195" y="256" font-size="14.5" font-weight="bold" fill="#2b5c8a" text-anchor="middle">data/docs/{DS}/*.docx</text>
+<text x="195" y="275" font-size="12.0" fill="#4b5563" text-anchor="middle">原始 Word 文档</text>
+<rect x="370" y="220" width="270" height="80" rx="9" fill="#ffffff" stroke="#2b5c8a" stroke-width="1.3"/>
+<text x="505" y="256" font-size="14.5" font-weight="bold" fill="#2b5c8a" text-anchor="middle">docx_parser.py</text>
+<text x="505" y="275" font-size="12.0" fill="#4b5563" text-anchor="middle">按 Heading 层级切分 + 抽图</text>
+<rect x="700" y="220" width="240" height="80" rx="9" fill="#ffffff" stroke="#2b5c8a" stroke-width="1.3"/>
+<text x="820" y="256" font-size="14.5" font-weight="bold" fill="#2b5c8a" text-anchor="middle">docs/{DS}_json/</text>
+<text x="820" y="275" font-size="12.0" fill="#4b5563" text-anchor="middle">chunks（含 title_path）</text>
+<rect x="990" y="220" width="240" height="80" rx="9" fill="#ffffff" stroke="#2b5c8a" stroke-width="1.3"/>
+<text x="1110" y="256" font-size="14.5" font-weight="bold" fill="#2b5c8a" text-anchor="middle">indexer.py</text>
+<text x="1110" y="275" font-size="12.0" fill="#4b5563" text-anchor="middle">批量 upsert（batch=32）</text>
+<rect x="1290" y="220" width="190" height="80" rx="9" fill="#ffffff" stroke="#2b5c8a" stroke-width="1.3"/>
+<text x="1385" y="250" font-size="13.5" font-weight="bold" fill="#2b5c8a" text-anchor="middle">ChromaDB</text>
+<text x="1385" y="264" font-size="11.0" fill="#4b5563" text-anchor="middle">collection={DS}_docs</text>
+<text x="1385" y="278" font-size="11.0" fill="#4b5563" text-anchor="middle">HNSW cosine</text>
+<rect x="80" y="350" width="230" height="80" rx="9" fill="#ffffff" stroke="#2b5c8a" stroke-width="1.3"/>
+<text x="195" y="386" font-size="14.5" font-weight="bold" fill="#2b5c8a" text-anchor="middle">data/images/{DS}/</text>
+<text x="195" y="405" font-size="12.0" fill="#4b5563" text-anchor="middle">img_*.png（抽出的图）</text>
+<rect x="80" y="690" width="300" height="200" rx="9" fill="#fffdf9" stroke="#a5601a" stroke-width="1.3"/>
+<text x="230" y="739" font-size="14.0" font-weight="bold" fill="#a5601a" text-anchor="middle">Streamlit 前端</text>
+<text x="230" y="758" font-size="11.5" fill="#4b5563" text-anchor="middle">frontend/app.py</text>
+<text x="230" y="777" font-size="11.5" fill="#4b5563" text-anchor="middle">:8501 GWM · :8502 MDM</text>
+<text x="230" y="796" font-size="11.5" fill="#4b5563" text-anchor="middle">session_id(UUID) · 历史渲染</text>
+<text x="230" y="815" font-size="11.5" fill="#4b5563" text-anchor="middle">检索模式 vector/bm25/hybrid</text>
+<text x="230" y="834" font-size="11.5" fill="#4b5563" text-anchor="middle">[ref:uid] → 图片内联放大</text>
+<text x="230" y="853" font-size="11.5" fill="#4b5563" text-anchor="middle">requests.post → /ask</text>
+<rect x="420" y="640" width="1080" height="540" rx="9" fill="#fffdf9" stroke="#a5601a" stroke-width="1.3"/>
+<text x="960" y="675" font-size="14.5" font-weight="bold" fill="#a5601a" text-anchor="middle">FastAPI 后端 · backend/api.py</text>
+<text x="960" y="694" font-size="12.0" fill="#4b5563" text-anchor="middle">SessionManager：内存 · 滑动窗口 3 条 · TTL 1800s · 后台清理线程 · 默认 session=default</text>
+<rect x="450" y="735" width="230" height="130" rx="9" fill="#fffdf9" stroke="#a5601a" stroke-width="1.3"/>
+<text x="565" y="777" font-size="13.5" font-weight="bold" fill="#a5601a" text-anchor="middle">① intent_chain</text>
+<text x="565" y="796" font-size="11.5" fill="#4b5563" text-anchor="middle">意图判别</text>
+<text x="565" y="815" font-size="11.5" fill="#4b5563" text-anchor="middle">thanks / chitchat</text>
+<text x="565" y="834" font-size="11.5" fill="#4b5563" text-anchor="middle">→ 直接回复（短路）</text>
+<rect x="710" y="735" width="230" height="130" rx="9" fill="#fffdf9" stroke="#a5601a" stroke-width="1.3"/>
+<text x="825" y="787" font-size="13.5" font-weight="bold" fill="#a5601a" text-anchor="middle">② rewrite_chain</text>
+<text x="825" y="806" font-size="11.5" fill="#4b5563" text-anchor="middle">多轮指代消解</text>
+<text x="825" y="825" font-size="11.5" fill="#4b5563" text-anchor="middle">剥离 'rewritten query:'</text>
+<rect x="970" y="735" width="230" height="130" rx="9" fill="#fffdf9" stroke="#a5601a" stroke-width="1.3"/>
+<text x="1085" y="769" font-size="13.5" font-weight="bold" fill="#a5601a" text-anchor="middle">③ Retriever</text>
+<text x="1085" y="787" font-size="11.5" fill="#4b5563" text-anchor="middle">mode + top_k=10</text>
+<text x="1085" y="805" font-size="11.5" fill="#4b5563" text-anchor="middle">vector: Chroma ≤1.0</text>
+<text x="1085" y="823" font-size="11.5" fill="#4b5563" text-anchor="middle">bm25: rank_bm25</text>
+<text x="1085" y="841" font-size="11.5" fill="#4b5563" text-anchor="middle">hybrid: RRF(k=60)</text>
+<rect x="1230" y="735" width="230" height="130" rx="9" fill="#fffdf9" stroke="#a5601a" stroke-width="1.3"/>
+<text x="1345" y="777" font-size="13.5" font-weight="bold" fill="#a5601a" text-anchor="middle">④ rag_chain</text>
+<text x="1345" y="796" font-size="11.5" fill="#4b5563" text-anchor="middle">system_prompt</text>
+<text x="1345" y="815" font-size="11.5" fill="#4b5563" text-anchor="middle">+ history + context</text>
+<text x="1345" y="834" font-size="11.5" fill="#4b5563" text-anchor="middle">→ 含 [ref:uid] 答案</text>
+<rect x="1230" y="1000" width="230" height="120" rx="9" fill="#fffdf9" stroke="#a5601a" stroke-width="1.3"/>
+<text x="1345" y="1037" font-size="13.5" font-weight="bold" fill="#a5601a" text-anchor="middle">⑤ 后处理</text>
+<text x="1345" y="1056" font-size="11.0" fill="#4b5563" text-anchor="middle">normalize_ref_position</text>
+<text x="1345" y="1075" font-size="11.0" fill="#4b5563" text-anchor="middle">dedup_refs</text>
+<text x="1345" y="1094" font-size="11.0" fill="#4b5563" text-anchor="middle">strip_refs（入历史）</text>
+<rect x="80" y="1300" width="260" height="110" rx="9" fill="#ffffff" stroke="#6b46a8" stroke-width="1.3"/>
+<text x="210" y="1351" font-size="13.5" font-weight="bold" fill="#6b46a8" text-anchor="middle">data/test/{DS}/*.xlsx</text>
+<text x="210" y="1370" font-size="11.5" fill="#4b5563" text-anchor="middle">测试集 (query, answer)</text>
+<rect x="400" y="1300" width="280" height="110" rx="9" fill="#ffffff" stroke="#6b46a8" stroke-width="1.3"/>
+<text x="540" y="1342" font-size="13.5" font-weight="bold" fill="#6b46a8" text-anchor="middle">eval_ragas.py</text>
+<text x="540" y="1361" font-size="11.5" fill="#4b5563" text-anchor="middle">批量 POST /ask</text>
+<text x="540" y="1380" font-size="11.5" fill="#4b5563" text-anchor="middle">收集 answer + contexts</text>
+<rect x="740" y="1300" width="300" height="110" rx="9" fill="#ffffff" stroke="#6b46a8" stroke-width="1.3"/>
+<text x="890" y="1342" font-size="13.5" font-weight="bold" fill="#6b46a8" text-anchor="middle">Ragas 指标</text>
+<text x="890" y="1361" font-size="11.5" fill="#4b5563" text-anchor="middle">faithfulness · answer_relevancy</text>
+<text x="890" y="1380" font-size="11.5" fill="#4b5563" text-anchor="middle">context_precision · context_recall</text>
+<rect x="1100" y="1300" width="380" height="110" rx="9" fill="#ffffff" stroke="#6b46a8" stroke-width="1.3"/>
+<text x="1290" y="1351" font-size="13.5" font-weight="bold" fill="#6b46a8" text-anchor="middle">ragas_results/{DS}/</text>
+<text x="1290" y="1370" font-size="11.5" fill="#4b5563" text-anchor="middle">{doc}_{mode}_ragas_result.xlsx</text>
+<rect x="1580" y="240" width="320" height="150" rx="9" fill="#ffffff" stroke="#2b7a4b" stroke-width="1.3"/>
+<text x="1740" y="283" font-size="14.5" font-weight="bold" fill="#2b7a4b" text-anchor="middle">vLLM chat</text>
+<text x="1740" y="302" font-size="11.5" fill="#4b5563" text-anchor="middle">:8000</text>
+<text x="1740" y="321" font-size="11.5" fill="#4b5563" text-anchor="middle">Qwen3.5-4B-AWQ</text>
+<text x="1740" y="340" font-size="11.5" fill="#4b5563" text-anchor="middle">gpu-util 0.65 · max-len 8192</text>
+<text x="1740" y="359" font-size="11.5" fill="#4b5563" text-anchor="middle">num-seqs 8 · enforce-eager</text>
+<rect x="1580" y="440" width="320" height="150" rx="9" fill="#ffffff" stroke="#2b7a4b" stroke-width="1.3"/>
+<text x="1740" y="483" font-size="14.5" font-weight="bold" fill="#2b7a4b" text-anchor="middle">vLLM embedding</text>
+<text x="1740" y="502" font-size="11.5" fill="#4b5563" text-anchor="middle">:8001</text>
+<text x="1740" y="521" font-size="11.5" fill="#4b5563" text-anchor="middle">Qwen3-Embedding-0.6B</text>
+<text x="1740" y="540" font-size="11.5" fill="#4b5563" text-anchor="middle">gpu-util 0.25 · max-len 800</text>
+<text x="1740" y="559" font-size="11.5" fill="#4b5563" text-anchor="middle">num-seqs 8</text>
+<rect x="1580" y="660" width="320" height="190" rx="9" fill="#ffffff" stroke="#2b7a4b" stroke-width="1.3"/>
+<text x="1740" y="713" font-size="13.5" font-weight="bold" fill="#2b7a4b" text-anchor="middle">部署脚本</text>
+<text x="1740" y="732" font-size="11.0" fill="#4b5563" text-anchor="middle">deploy_all.sh</text>
+<text x="1740" y="751" font-size="11.0" fill="#4b5563" text-anchor="middle"> ├ deploy_chat.sh → :8000</text>
+<text x="1740" y="770" font-size="11.0" fill="#4b5563" text-anchor="middle"> └ deploy_emb.sh → :8001</text>
+<text x="1740" y="789" font-size="11.0" fill="#4b5563" text-anchor="middle">common.sh：conda rag · CUDA · 代理</text>
+<text x="1740" y="808" font-size="11.0" fill="#4b5563" text-anchor="middle">wait_ready()：轮询 /health 60×3s</text>
+<rect x="1580" y="890" width="320" height="190" rx="9" fill="#ffffff" stroke="#2b7a4b" stroke-width="1.3"/>
+<text x="1740" y="953" font-size="13.5" font-weight="bold" fill="#2b7a4b" text-anchor="middle">端口速查</text>
+<text x="1740" y="972" font-size="11.0" fill="#4b5563" text-anchor="middle">8000/8001  vLLM chat / embedding</text>
+<text x="1740" y="991" font-size="11.0" fill="#4b5563" text-anchor="middle">8002  后端 GWM · GWM_docs</text>
+<text x="1740" y="1010" font-size="11.0" fill="#4b5563" text-anchor="middle">8003  后端 MDM · MDM_docs</text>
+<text x="1740" y="1029" font-size="11.0" fill="#4b5563" text-anchor="middle">8501/8502  前端 GWM / MDM</text>
+<rect x="1580" y="1120" width="320" height="130" rx="9" fill="#ffffff" stroke="#2b7a4b" stroke-width="1.3"/>
+<text x="1740" y="1162" font-size="13.5" font-weight="bold" fill="#2b7a4b" text-anchor="middle">日志</text>
+<text x="1740" y="1181" font-size="11.0" fill="#4b5563" text-anchor="middle">$LOG_DIR/vllm-chat.log</text>
+<text x="1740" y="1200" font-size="11.0" fill="#4b5563" text-anchor="middle">$LOG_DIR/vllm-emb.log</text>
+<text x="1740" y="1219" font-size="11.0" fill="#4b5563" text-anchor="middle">$LOG_DIR = $HOME/logs</text>
+<rect x="1580" y="1290" width="320" height="130" rx="9" fill="#ffffff" stroke="#2b7a4b" stroke-width="1.3"/>
+<text x="1740" y="1342" font-size="13.5" font-weight="bold" fill="#2b7a4b" text-anchor="middle">重建索引</text>
+<text x="1740" y="1361" font-size="10.5" fill="#4b5563" text-anchor="middle">python ingestion/docx_parser.py</text>
+<text x="1740" y="1380" font-size="10.5" fill="#4b5563" text-anchor="middle">python ingestion/indexer.py</text>
+<rect x="325.5" y="237.0" width="29.0" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="340.0" y="250.0" font-size="11.5" fill="#4b5563" text-anchor="middle">读取</text>
+<rect x="647.0" y="237.0" width="46.0" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="670.0" y="250.0" font-size="11.5" fill="#4b5563" text-anchor="middle">chunks</text>
+<rect x="479.0" y="331.0" width="52.0" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="505.0" y="344.0" font-size="11.5" fill="#4b5563" text-anchor="middle">抽图落盘</text>
+<rect x="950.5" y="237.0" width="29.0" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="965.0" y="250.0" font-size="11.5" fill="#4b5563" text-anchor="middle">切片</text>
+<rect x="1237.0" y="237.0" width="46.0" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="1260.0" y="250.0" font-size="11.5" fill="#4b5563" text-anchor="middle">upsert</text>
+<rect x="1044.5" y="163.0" width="170.9" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="1130.0" y="176.0" font-size="11.5" fill="#4b5563" text-anchor="middle">indexer 调 /v1/embeddings</text>
+<rect x="169.0" y="511.0" width="52.0" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="195.0" y="524.0" font-size="11.5" fill="#4b5563" text-anchor="middle">图片资源</text>
+<rect x="382.0" y="777.0" width="66.0" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="415.0" y="790.0" font-size="11.5" fill="#4b5563" text-anchor="middle">POST /ask</text>
+<rect x="1322.0" y="921.0" width="46.0" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="1345.0" y="934.0" font-size="11.5" fill="#4b5563" text-anchor="middle">answer</text>
+<rect x="637.0" y="1039.0" width="126.1" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="700.0" y="1052.0" font-size="11.5" fill="#4b5563" text-anchor="middle">answer + sources[]</text>
+<rect x="863.6" y="511.0" width="72.7" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="900.0" y="524.0" font-size="11.5" fill="#4b5563" text-anchor="middle">ChatOpenAI</text>
+<rect x="1323.6" y="496.0" width="112.7" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="1380.0" y="509.0" font-size="11.5" fill="#4b5563" text-anchor="middle">OpenAIEmbeddings</text>
+<rect x="355.5" y="1332.0" width="29.0" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="370.0" y="1345.0" font-size="11.5" fill="#4b5563" text-anchor="middle">读取</text>
+<rect x="1055.5" y="1332.0" width="29.0" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="1070.0" y="1345.0" font-size="11.5" fill="#4b5563" text-anchor="middle">写出</text>
+<rect x="607.0" y="1223.0" width="66.0" height="18" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="640.0" y="1236.0" font-size="11.5" fill="#4b5563" text-anchor="middle">POST /ask</text>
+<text x="80" y="470" font-size="11.5" fill="#8a94a6" text-anchor="start">docx_parser：仅从 Heading 1 起进入正文；遇新标题或图片边界 flush；标题回填进切片正文</text>
+<text x="80" y="1450" font-size="11.5" fill="#8a94a6" text-anchor="start">评估复用 :8000 / :8001 同一对 vLLM 服务（不新建实例）　|　run_eval.sh 按 DATASETS × MODES 组合遍历</text>
+<text x="1400" y="52" font-size="13.0" fill="#4b5563" text-anchor="start">图例</text>
+<text x="1400" y="76" font-size="11.5" fill="#8a94a6" text-anchor="start">───  同步调用（HTTP / 函数）</text>
+<text x="1400" y="98" font-size="11.5" fill="#8a94a6" text-anchor="start">┄┄┄  文件落盘 / 索引数据流</text>
+<text x="64" y="1530" font-size="11.5" fill="#8a94a6" text-anchor="start">图源：docs/diagrams/gen_architecture.py（一次生成 SVG + drawio，坐标一致）　|　架构说明：docs/architecture.md</text>
+</svg>

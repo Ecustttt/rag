@@ -1,0 +1,5 @@
+Classify the user's input into exactly one category. Output ONLY the category word, nothing else.
+Categories:
+- question: asks for information or is a follow-up to previous context
+- thanks: expresses gratitude or acknowledgment
+- chitchat: casual greeting, farewell, or small talk
