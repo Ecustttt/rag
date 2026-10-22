@@ -10,12 +10,19 @@ python ingestion/indexer.py --dataset GWM/MDM
 # 3. 后端
 # GWM 后端
 python backend/api.py --dataset GWM --port 8002
+python backend/api_sse.py --dataset GWM --port 8002
 
 # MDM 后端
 python backend/api.py --dataset MDM --port 8003
+python backend/api_sse.py --dataset MDM --port 8003
 
 # 4. 前端
 streamlit run frontend/app.py --server.port 8501 -- \
+  --api-url http://127.0.0.1:8002/ask \
+  --image-base ./data/images/GWM/ \
+  --title-suffix "[GWM]"
+
+streamlit run frontend/app_sse.py --server.address 0.0.0.0 --server.port 8501 -- \
   --api-url http://127.0.0.1:8002/ask \
   --image-base ./data/images/GWM/ \
   --title-suffix "[GWM]"
@@ -26,6 +33,16 @@ streamlit run frontend/app.py --server.port 8502 -- \
   --image-base ./data/images/MDM/ \
   --title-suffix "[MDM]"
 
+streamlit run frontend/app_sse.py --server.port 8502 -- \
+  --api-url http://127.0.0.1:8003/ask \
+  --image-base ./data/images/MDM/ \
+  --title-suffix "[MDM]"
 
 # ragas检索模式
 python eval/eval_ragas.py --dataset GWM --mode vector
+
+
+
+# 临时外网
+cloudflared tunnel --url http://localhost:8501 --protocol http2
+cloudflared tunnel --url http://localhost:8502 --protocol http2

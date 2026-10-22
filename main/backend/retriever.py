@@ -96,12 +96,26 @@ class Retriever:
             payload[cid]["rrf_score"] = s
         return [payload[cid] for cid, _ in ranked]
 
-    async def retrieve(self, query, mode: Literal["vector", "bm25", "hybrid"] = "vector", k=None):
+    async def retrieve(
+        self,
+        semantic_query: str | None = None,
+        keyword_query: str | None = None,
+        mode: Literal["vector", "bm25", "hybrid"] = "vector",
+        k: int | None = None,
+        query: str | None = None,
+    ):
+        # 向后兼容旧调用
+        if semantic_query is None:
+            semantic_query = query if query is not None else (keyword_query or "")
+        if keyword_query is None:
+            keyword_query = query if query is not None else semantic_query
+
         k = k or self.cfg.top_k
+
         if mode == "vector":
-            return await self.vector_search(query, k)
+            return await self.vector_search(semantic_query, k)
         if mode == "bm25":
-            return self.bm25_search(query, k)
-        vec = await self.vector_search(query, k)
-        bm = self.bm25_search(query, k)
+            return self.bm25_search(keyword_query, k)
+        vec = await self.vector_search(semantic_query, k)
+        bm  = self.bm25_search(keyword_query, k)
         return self.rrf_fuse(vec, bm, k)

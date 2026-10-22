@@ -5,17 +5,19 @@ source "$SCRIPT_DIR/common.sh"
 
 # ---- 默认值 ----
 CHAT_MODEL="${CHAT_MODEL:-$HOME/models/Qwen3.5-4B-AWQ-4bit}"
+#CHAT_MODEL="${CHAT_MODEL:-$HOME/models/Qwen3.5-9B-GPTQ-4bit}"
 CHAT_PORT="${CHAT_PORT:-8000}"
 CHAT_SERVED_NAME="${CHAT_SERVED_NAME:-qwen3.5-4b}"
-CHAT_MAX_LEN="${CHAT_MAX_LEN:-8192}"
-CHAT_MAX_SEQS="${CHAT_MAX_SEQS:-8}"
+#CHAT_SERVED_NAME="${CHAT_SERVED_NAME:-qwen3.5-9b}"
+CHAT_MAX_LEN="${CHAT_MAX_LEN:-4096}"
+CHAT_MAX_SEQS="${CHAT_MAX_SEQS:-2}"
 CHAT_GPU_UTIL="${CHAT_GPU_UTIL:-0.65}"
 CHAT_LOG="$LOG_DIR/vllm-chat.log"
 
 echo "启动 chat 服务: $CHAT_SERVED_NAME @ $CHAT_PORT"
 vllm serve "$CHAT_MODEL" \
   --host 0.0.0.0 --port "$CHAT_PORT" \
-  --trust-remote-code --dtype half \
+  --trust-remote-code --dtype auto \
   --max-model-len "$CHAT_MAX_LEN" \
   --max-num-seqs "$CHAT_MAX_SEQS" \
   --gpu-memory-utilization "$CHAT_GPU_UTIL" \

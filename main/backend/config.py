@@ -40,6 +40,8 @@ class AppConfig:
     rewrite_prompt_file: str = "rewrite_prompt_en.txt"
     intent_prompt_file: str = "intent_prompt_en.txt"
     direct_reply_prompt_file: str = "direct_reply_prompt_en.txt"
+    rewrite_vector_prompt_file: str = "rewrite_prompt_en_vector.txt"
+    rewrite_bm25_prompt_file: str = "rewrite_prompt_en_bm25.txt"
 
     # 会话
     session_max_history: int = 3

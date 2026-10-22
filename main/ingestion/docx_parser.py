@@ -13,7 +13,7 @@ class ParseConfig:
     image_ext_default: str = "png"
     image_name_pattern: str = "img_{index:04d}.{ext}"
     body_start_level: int = 1
-    split_on_image_boundary: bool = True
+    overlap_chars: int = 100
 
 
 # ======================
@@ -29,14 +29,15 @@ class DocxParser:
 
         self.chunks = []
         self.current_titles = {}
-        self.buffer = []
-        self.images = []
+        self.buffer = []            # 文字
+        self.pending_images = []    # 当前 buffer 之后、尚未 flush 的图
         self.order = 0
         self.image_index = 0
         self.in_body = False
         self.seg_id = 0
         self.last_title_path = None
 
+    # ---------- 图片 ----------
     def save_image(self, image_part):
         ext = image_part.content_type.split("/")[-1] or self.config.image_ext_default
         self.image_index += 1
@@ -51,23 +52,19 @@ class DocxParser:
     def extract_image_from_paragraph(self, paragraph):
         images = []
         for run in paragraph.runs:
-            drawings = run._element.xpath(".//a:blip")
-            for drawing in drawings:
+            for drawing in run._element.xpath(".//a:blip"):
                 rId = drawing.get(
                     "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
                 )
                 if rId and rId in self.doc.part.related_parts:
                     image_part = self.doc.part.related_parts[rId]
-                    img_path = self.save_image(image_part)
-                    images.append(img_path)
+                    images.append(self.save_image(image_part))
         return images
 
+    # ---------- 标题 ----------
     def get_title_path(self):
-        return [
-            self.current_titles[i]
-            for i in sorted(self.current_titles)
-            if self.current_titles.get(i)
-        ]
+        return [self.current_titles[i]
+                for i in sorted(self.current_titles) if self.current_titles.get(i)]
 
     def _reset_titles_from(self, level, text):
         self.current_titles[level] = text
@@ -75,8 +72,27 @@ class DocxParser:
             if k > level:
                 self.current_titles.pop(k, None)
 
-    def flush_chunk(self):
-        if not self.buffer:
+    # ---------- overlap ----------
+    def _tail_text(self):
+        """从 buffer 末尾取约 overlap_chars 字符的文字，作为下一 chunk 的开头。"""
+        n = self.config.overlap_chars
+        if n <= 0:
+            return []
+        tail_parts = []
+        total = 0
+        for part in reversed(self.buffer):
+            if total >= n and tail_parts:
+                break
+            tail_parts.insert(0, part)
+            total += len(part)
+        # 如果最后一段太长，按字符截断
+        if tail_parts and total > n:
+            tail_parts[0] = tail_parts[0][-n:]
+        return tail_parts
+
+    # ---------- flush ----------
+    def flush_chunk(self, keep_overlap_text=True):
+        if not self.buffer and not self.pending_images:
             return
 
         current_path = self.get_title_path()
@@ -96,31 +112,36 @@ class DocxParser:
         chunk = {
             "id": self.order,
             "seg_id": self.seg_id,
-            "title_path": current_path,
+            "title_path": list(current_path),
             "content": content,
-            "images": self.images.copy(),
+            "images": list(self.pending_images),   # 图随本 chunk 落盘
         }
         self.chunks.append(chunk)
-        self.buffer.clear()
-        self.images.clear()
 
+        self.buffer = []
+        self.pending_images = []
+
+    # ---------- 主流程 ----------
     def parse(self):
         for p in self.doc.paragraphs:
             text = p.text.strip()
             style = p.style.name
 
+            if style == "List Paragraph":
+                style = "Normal"
+
+            # ---- 标题 ----
             if style.startswith("Heading"):
                 level_str = style.replace("Heading ", "")
                 if not level_str.isdigit():
                     continue
                 level = int(level_str)
 
-                if self.buffer or self.images:
-                    self.flush_chunk()
+                # 标题前 flush 上一段（图随文字走）
+                self.flush_chunk(keep_overlap_text=False)
 
                 if level == self.config.body_start_level:
                     self.in_body = True
-
                 if self.in_body:
                     self._reset_titles_from(level, text)
                     self.buffer.append(text)
@@ -129,23 +150,28 @@ class DocxParser:
             if not self.in_body:
                 continue
 
-            if (
-                self.config.split_on_image_boundary
-                and text
-                and self.images
-                and self.buffer
-            ):
-                self.flush_chunk()
-
             imgs = self.extract_image_from_paragraph(p)
-            if imgs:
-                self.images.extend(imgs)
 
+            # 关键：图后第一段文字到达 → 它同时要"收进当前 chunk"和"作为下一 chunk 开头"
+            if text and self.pending_images:
+                # 1) 把图后第一段也加进当前 buffer，让 flush 出的 chunk 末尾带上它
+                self.buffer.append(text)
+                # 2) flush 当前 chunk（content = 图前文字 + 图后第一段，images = 图）
+                self.flush_chunk()
+                # 3) 这一段作为下一 chunk 的起始（前向 overlap：同一段出现在两个 chunk）
+                self.buffer = [text]
+                self.pending_images.extend(imgs)
+                continue
+
+            if imgs:
+                self.pending_images.extend(imgs)
             if text:
                 self.buffer.append(text)
 
-        self.flush_chunk()
+        # 文档结束
+        self.flush_chunk(keep_overlap_text=False)
         return self.chunks
+
 
 
 # ======================

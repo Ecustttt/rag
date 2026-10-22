@@ -47,11 +47,13 @@ def build_chains(cfg: AppConfig, llm):
     rewrite_prompt = cfg.load_prompt(cfg.rewrite_prompt_file)
     intent_prompt = cfg.load_prompt(cfg.intent_prompt_file)
     direct_reply_prompt = cfg.load_prompt(cfg.direct_reply_prompt_file)
+    rewrite_vector_prompt = cfg.load_prompt(cfg.rewrite_vector_prompt_file)
+    rewrite_bm25_prompt = cfg.load_prompt(cfg.rewrite_bm25_prompt_file)
 
     rag_prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
         MessagesPlaceholder(variable_name="history"),
-        ("human", "上下文：{context}\n\n问题：{question}"),
+        ("human", "chunks：{context}\n\nquestion：{question}"),
     ])
     rag_chain = (
         {
@@ -70,6 +72,21 @@ def build_chains(cfg: AppConfig, llm):
         ]) | llm | StrOutputParser()
     )
 
+    rewrite_vector_chain = (
+        ChatPromptTemplate.from_messages([
+            ("system", rewrite_vector_prompt),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "{question}"),
+        ]) | llm | StrOutputParser()
+    )
+    rewrite_bm25_chain = (
+        ChatPromptTemplate.from_messages([
+            ("system", rewrite_bm25_prompt),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "{question}"),
+        ]) | llm | StrOutputParser()
+    )
+
     rewrite_chain = (
         ChatPromptTemplate.from_messages([
             ("system", rewrite_prompt),
@@ -82,6 +99,8 @@ def build_chains(cfg: AppConfig, llm):
         "rag_chain": rag_chain,
         "intent_chain": intent_chain,
         "rewrite_chain": rewrite_chain,
+        "rewrite_vector_chain": rewrite_vector_chain,
+        "rewrite_bm25_chain": rewrite_bm25_chain,
         "direct_reply_prompt": direct_reply_prompt,
     }
 
@@ -128,8 +147,27 @@ def dedup_refs(text, docs_with_score):
 
 
 def normalize_ref_position(text):
-    return re.sub(r"\[ref:([\w\-]+)\]([.。!！?？,，;；])", r"\2[ref:\1]", text)
+    """连续 ref 串后的标点挪到串前：[ref:a][ref:b]. → .[ref:a][ref:b]"""
+    return re.sub(
+        r"((?:\[ref:[\w\-]+\])+)([.。!！?？,，;；])",
+        r"\2\1",
+        text,
+    )
 
 
 def strip_refs(text):
     return re.sub(REF_PATTERN, "", text).strip()
+
+
+def clean_query(text: str, fallback: str) -> str:
+    """清理改写输出：去代码围栏、引号、前缀标签；空则回退原 query"""
+    t = (text or "").strip()
+    if t.startswith("```"):
+        t = re.sub(r"^```[a-zA-Z]*\s*", "", t)
+        t = re.sub(r"\s*```$", "", t).strip()
+    t = t.strip('"').strip("'").strip()
+    t = re.sub(
+        r"^(rewritten query|output|search query|semantic|keyword)\s*[:：]\s*",
+        "", t, flags=re.I,
+    ).strip()
+    return t or fallback
