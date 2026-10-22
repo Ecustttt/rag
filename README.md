@@ -1,4 +1,4 @@
-# MPMQA RAG — 工业设备手册多轮问答系统
+# MPMQA RAG 
 
 面向工业物联网设备手册（**GWM / MDM**）的**全本地化** RAG 多轮问答系统：
 
@@ -445,16 +445,9 @@ chat 额外带了 `--enforce-eager`（关闭 CUDA Graph，省显存、启动快�
 
 脚本按文件名 glob 遍历，`query` 或 `answer` 为空的行会被丢弃；输出命名 `{文档名}_{模式}_ragas_result.xlsx`。
 
-当前规模：
-
-| 数据集 | 文档数 | 切片数 | 评测条数 |
-|---|---|---|---|
-| GWM | 4 | 461 | 275 |
-| MDM | 5 | 527 | 410 |
-
 ---
 
-## 评估结果
+## 评估
 
 用 `ragas 0.4.3` 的四个指标（评估 LLM/embedding 都复用本机 vLLM 服务，`extra_body` 里关掉 thinking）：
 
@@ -463,55 +456,10 @@ chat 额外带了 `--enforce-eager`（关闭 CUDA Graph，省显存、启动快�
 - **Context Precision** —— 检索上下文里相关内容排得够不够前
 - **Context Recall** —— 标准答案所需信息被召回得全不全
 
-### 同一样本集上的模式对比（GWM，n=126）
-
-在**完全相同**的两份文档、相同 126 条问题上跑 vector 与 bm25：
-
-| 模式 | Faithfulness | Answer Relevancy | Context Precision | Context Recall |
-|---|---|---|---|---|
-| `bm25` | **0.948** | **0.904** | **0.686** | **0.948** |
-| `vector` | 0.936 | 0.874 | 0.603 | 0.896 |
-
-BM25 在四个指标上全面领先，**Context Precision 差距最大（+0.083）**。原因不难理解：语料是术语密集的英文产品手册，用户提问高度复用手册原文词汇，纯词法匹配在这类场景下召回更准；而向量检索的同义泛化能力反而引入了更多弱相关上下文。
-
-> 这也说明**不能只靠向量**——`hybrid` 模式存在的意义正在于此。不过上面的数据还没有 hybrid 的完整结果（见下）。
-
-### 分文档明细（`ragas_results/`）
-
-| 数据集 | 文档 | 模式 | 样本 | Faith. | Ans.Rel. | Ctx.Prec. | Ctx.Rec. |
-|---|---|---|---|---|---|---|---|
-| GWM | GWM Platform Overview | bm25 | 29 | 0.975 | 0.877 | 0.590 | 0.930 |
-| GWM | GWM Platform Overview | vector | 29 | 0.953 | 0.835 | 0.574 | 0.911 |
-| GWM | Monitoring Module User Manual | bm25 | 97 | 0.940 | 0.912 | 0.715 | 0.954 |
-| GWM | Monitoring Module User Manual | vector | 97 | 0.931 | 0.886 | 0.611 | 0.892 |
-| GWM | Provisioning Module User Manual | vector | 101 | 0.944 | 0.870 | 0.568 | 0.856 |
-| GWM | System Module User Manual | vector | 48 | 0.939 | 0.906 | 0.668 | 0.979 |
-| MDM | Configuration Module User Manual V1.0 | vector | 98 | 0.953 | 0.905 | 0.548 | 0.896 |
-
-汇总（仅统计已跑过的组合）：
-
-| 数据集 | 模式 | 覆盖样本 | Faith. | Ans.Rel. | Ctx.Prec. | Ctx.Rec. |
-|---|---|---|---|---|---|---|
-| GWM | vector | 275（4 文档，全量） | 0.939 | 0.878 | 0.601 | 0.896 |
-| GWM | bm25 | 126（2 文档） | 0.948 | 0.904 | 0.686 | 0.948 |
-| MDM | vector | 98（1 文档） | 0.953 | 0.905 | 0.548 | 0.896 |
-
-**覆盖率如实说明**：MDM 还有 4 份文档（312 条）未跑；GWM 的 bm25 只跑了 2 份文档；**三种模式的 hybrid 结果还没有**。跑全量只需把 [`eval/run_eval.sh`](eval/run_eval.sh) 顶部的数组注释解开：
-
-```bash
-DATASETS=("GWM" "MDM")
-MODES=("vector" "bm25" "hybrid")
-```
-
-横向看，`Context Precision`（0.548–0.715）普遍是最弱的一环，说明**召回结果里的排序还有优化空间**——`top_k`、`score_threshold`、切片粒度都是可以调的旋钮。
-
-
 
 ---
 
 ## 已知限制
-
-按「实际影响」排序，都是当前代码里真实存在的，不是假想：
 
 1. **BM25 分词只认 ASCII** —— `retriever.py` 的 `tokenize()` 是 `re.findall(r"[a-z0-9]+", text.lower())`。当前语料是英文手册所以恰好没问题；**一旦接入中文语料，BM25 与 hybrid 模式会几乎失效**，需要换成 `jieba` 之类的分词器（索引和 query 两侧都要改）。
 2. **BM25 索引不支持增量** —— 进程启动时对全库一次性建索引并常驻内存，切片规模大时启动慢、内存涨；新增或修改切片后**必须重启后端**才能生效。
@@ -523,23 +471,6 @@ MODES=("vector" "bm25" "hybrid")
 8. **`QueryResponse.images` 恒为空数组** —— 历史遗留字段，图片实际通过 `sources[].image_filename` 传递。
 9. **评测覆盖不完整** —— 详见上面的覆盖率说明，hybrid 尚无结果。
 10. **当前是「英文语料 + 中文界面」** —— 四份提示词均为 `_en` 版，答案语言跟随手册语料（英文）；而 Streamlit 界面、按钮、错误提示是中文。若要中文作答，需替换 `backend/prompts/` 下的提示词（并同步注意第 1 条的分词问题）。
-
----
-
-## 仓库说明
-
-`data/` 目录（实测 **201MB**：手册原稿 95MB + 插图 97MB + 向量库 8.9MB + 评测集 176KB）**默认不入库**，见 [`.gitignore`](.gitignore)。这些内容全部可由 `docx_parser.py` / `indexer.py` 从 `.docx` 重新生成，没必要进 git。
-
-克隆后要跑起来，需要自备并放到对应位置：
-
-```
-data/docs/{DS}/*.docx      # 手册原稿（内部资料，未入库）
-data/test/{DS}/*.xlsx      # 评测集（业务问答对，未入库）
-```
-
-然后按 [快速开始](#快速开始) 的第 1～2 步重新切片入库即可。如果希望仓库自带小体积的评测集，把 `.gitignore` 里的 `data/test/` 那一行删掉或注释掉（仅 176KB）。
-
-`ragas_results/` 只有 336KB 且是结论性产物，**已入库**。
 
 ---
 
@@ -556,4 +487,4 @@ data/test/{DS}/*.xlsx      # 评测集（业务问答对，未入库）
 
 ## License
 
-暂未指定。若需对外开源，请补充 `LICENSE` 文件。
+暂未指定。若需对外开源，请补充 `LICENSE` 文件。    
