@@ -3,7 +3,6 @@ import re
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import HumanMessage, AIMessage
 
 from config import AppConfig
@@ -13,13 +12,21 @@ REF_PATTERN = r"\[ref:([\w\-]+)\]"
 
 
 def build_llm(cfg: AppConfig) -> ChatOpenAI:
+    extra = {}
+    if cfg.supports_chat_template_kwargs:          # 只有 vLLM 才带
+        extra["extra_body"] = {
+            "chat_template_kwargs": {"enable_thinking": cfg.enable_thinking}
+        }
     return ChatOpenAI(
         model=cfg.chat_model,
         temperature=cfg.temperature,
         max_tokens=cfg.max_tokens,
-        openai_api_base=cfg.vllm_chat_url,
-        openai_api_key="not-needed",
-        extra_body={"chat_template_kwargs": {"enable_thinking": cfg.enable_thinking}},
+        openai_api_base=cfg.chat_base_url,
+        openai_api_key=cfg.chat_api_key or "not-needed",
+        timeout=cfg.request_timeout,
+        max_retries=cfg.max_retries, 
+        stream_usage=True,
+        **extra,
     )
 
 
@@ -31,6 +38,32 @@ def format_history(history: list) -> list:
         elif msg["role"] == "assistant":
             msgs.append(AIMessage(content=msg["content"]))
     return msgs
+
+
+LINK_PATTERN = r"\[link:([\w\-]+)\]"
+
+def format_links(links):
+    if not links:
+        return "（无可用链接）"
+    return "\n".join(f"[{l['id']}] {l['name']}" for l in links)
+
+def extract_used_links(text, links_map):
+    """从 answer 提取实际用到的 id，返回去重后的链接对象列表；不在表里的 id 忽略"""
+    used, seen = [], set()
+    for m in re.finditer(LINK_PATTERN, text):
+        lid = m.group(1)
+        if lid in links_map and lid not in seen:
+            seen.add(lid)
+            used.append({
+                "id": links_map[lid]["id"],
+                "name": links_map[lid]["name"],
+                "url": links_map[lid]["url"],
+            })
+    return used
+
+def strip_link_refs(text, links_map):
+    """删除不在 links_map 中的 [link:xxx]（防幻觉），合法标记保留"""
+    return re.sub(LINK_PATTERN, lambda m: m.group(0) if m.group(1) in links_map else "", text)
 
 
 def format_docs(docs_with_score):
@@ -53,15 +86,16 @@ def build_chains(cfg: AppConfig, llm):
     rag_prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
         MessagesPlaceholder(variable_name="history"),
-        ("human", "chunks：{context}\n\nquestion：{question}"),
+        ("human", "chunks：{context}\n\nlinks：{link_list}\n\nquestion：{question}"),
     ])
     rag_chain = (
         {
             "context": lambda x: format_docs(x["docs_with_score"]),
             "question": lambda x: x["question"],
             "history": lambda x: format_history(x["history"]),
+            "link_list": lambda x: format_links(x["links"]),
         }
-        | rag_prompt | llm | StrOutputParser()
+        | rag_prompt | llm
     )
 
     intent_chain = (
@@ -69,7 +103,7 @@ def build_chains(cfg: AppConfig, llm):
             ("system", intent_prompt),
             MessagesPlaceholder(variable_name="history"),
             ("human", "{question}"),
-        ]) | llm | StrOutputParser()
+        ]) | llm
     )
 
     rewrite_vector_chain = (
@@ -77,14 +111,14 @@ def build_chains(cfg: AppConfig, llm):
             ("system", rewrite_vector_prompt),
             MessagesPlaceholder(variable_name="history"),
             ("human", "{question}"),
-        ]) | llm | StrOutputParser()
+        ]) | llm
     )
     rewrite_bm25_chain = (
         ChatPromptTemplate.from_messages([
             ("system", rewrite_bm25_prompt),
             MessagesPlaceholder(variable_name="history"),
             ("human", "{question}"),
-        ]) | llm | StrOutputParser()
+        ]) | llm
     )
 
     rewrite_chain = (
@@ -92,7 +126,7 @@ def build_chains(cfg: AppConfig, llm):
             ("system", rewrite_prompt),
             MessagesPlaceholder(variable_name="history"),
             ("human", "{question}"),
-        ]) | llm | StrOutputParser()
+        ]) | llm
     )
 
     return {

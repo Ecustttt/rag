@@ -7,6 +7,7 @@ import argparse
 import asyncio
 from collections import defaultdict
 from typing import Literal
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
@@ -97,7 +98,9 @@ def init_app(config: AppConfig):
     retriever = Retriever(cfg, embedding, vectorstore)
     llm = build_llm(cfg)
     chains = build_chains(cfg, llm)
-    rag_service = RagService(cfg, chains, llm, retriever)
+    links_data = json.loads(Path(cfg.links_file).read_text(encoding="utf-8"))
+    links_map = {l["id"]: l for l in links_data}      # id → {id,name,url,note}
+    rag_service = RagService(cfg, chains, llm, retriever, links_data, links_map)
     session_mgr = SessionManager(
         max_history=cfg.session_max_history,
         ttl=cfg.session_ttl,
@@ -128,11 +131,16 @@ class SourceItem(BaseModel):
     image_filename: str | None = None
     images: list[str] = []
 
+class LinkItem(BaseModel):
+    id: str
+    name: str
+    url: str
 
 class QueryResponse(BaseModel):
     answer: str
     sources: list[SourceItem]
     session_id: str
+    links: list[LinkItem] = []
 
 
 # ======================
@@ -210,7 +218,6 @@ async def ask(request: QueryRequest):
     session_id = request.session_id or cfg.default_session_id
     trace = Trace(session_id, query, request.mode, stream=False, user_id=request.user_id)
     trace.set(model=cfg.chat_model)
-
     try:
         # 壳层：取历史、存当前 query
         history = session_mgr.get_history(session_id)
@@ -221,7 +228,8 @@ async def ask(request: QueryRequest):
         trace.mark("gen_start")
         result = await rag_service.answer(query, history, request.mode)
         trace.mark("gen_end")
-
+        for stage, u in (result.get("usage") or {}).items():
+            trace.add_usage(stage, u)
         intent = result["intent"]
         clean_answer = strip_refs(result["answer"])
         session_mgr.add_message(session_id, "assistant", clean_answer)
@@ -243,7 +251,7 @@ async def ask(request: QueryRequest):
 
         sources = [SourceItem(**s) for s in sources_payload]
         return QueryResponse(
-            answer=result["answer"], sources=sources, session_id=session_id,
+            answer=result["answer"], sources=sources, session_id=session_id, links=result.get("links", [])
         )
 
     except HTTPException:
@@ -287,6 +295,7 @@ async def ask_stream(request: QueryRequest):
                 if kind == "intent":
                     intent = ev["intent"]
                     trace.set(intent=intent)
+                    trace.add_usage("intent", ev.get("usage"))
                     if intent in ("thanks", "chitchat"):
                         source_store.add(session_id, [])
                         yield sse_format("start", {"session_id": session_id, "has_sources": False})
@@ -295,6 +304,8 @@ async def ask_stream(request: QueryRequest):
                 elif kind == "queries":
                     sem_q, kw_q = ev["sem_query"], ev["kw_query"]
                     trace.set(sem_query=sem_q, kw_query=kw_q)
+                    for stage, u in (ev.get("usage") or {}).items():
+                        trace.add_usage(stage, u)
 
                 elif kind == "docs":
                     sources_payload = build_sources_payload(ev["docs_with_score"])
@@ -323,6 +334,8 @@ async def ask_stream(request: QueryRequest):
 
                 elif kind == "done":
                     trace.mark("gen_end")
+                    for stage, u in (ev.get("usage") or {}).items():    # ← 新增，必须在 emit 之前
+                        trace.add_usage(stage, u)
                     clean_answer = strip_refs(full_answer)
                     session_mgr.add_message(session_id, "assistant", clean_answer)
                     trace.set(
@@ -333,6 +346,7 @@ async def ask_stream(request: QueryRequest):
                     yield sse_format("done", {
                         "session_id": session_id,
                         "answer_length": len(full_answer),
+                        "links": ev.get("links", []),
                     })
 
         except Exception as e:
@@ -382,6 +396,7 @@ class RagResponse(BaseModel):
     kw_query: str | None
     trace_id: str 
     trace: dict
+    links: list[LinkItem] = []
 
 @app.post("/rag/answer", response_model=RagResponse)
 async def rag_answer(request: RagRequest):
@@ -399,7 +414,9 @@ async def rag_answer(request: RagRequest):
         trace.mark("gen_start")
         result = await rag_service.answer(query, request.history, request.mode)
         trace.mark("gen_end")
-
+        for stage, u in (result.get("usage") or {}).items():
+            trace.add_usage(stage, u)
+    
         docs_with_score = result.get("docs_with_score", [])
         sources_payload = build_sources_payload(docs_with_score)
         clean_answer = strip_refs(result["answer"])
@@ -424,6 +441,7 @@ async def rag_answer(request: RagRequest):
             kw_query=result.get("kw_query"),
             trace_id=trace.trace_id,
             trace=trace_data,
+            links=result.get("links", []),
         )
 
     except HTTPException:
@@ -460,6 +478,7 @@ async def rag_answer_stream(request: RagRequest):
                 if kind == "intent":
                     intent = ev["intent"]
                     trace.set(intent=intent)
+                    trace.add_usage("intent", ev.get("usage"))
                     yield sse_format("start", {
                         "session_id": request.session_id,
                         "has_sources": intent == "rag",
@@ -468,6 +487,8 @@ async def rag_answer_stream(request: RagRequest):
                 elif kind == "queries":
                     sem_q, kw_q = ev["sem_query"], ev["kw_query"]
                     trace.set(sem_query=sem_q, kw_query=kw_q)
+                    for stage, u in (ev.get("usage") or {}).items():
+                        trace.add_usage(stage, u)
 
                 elif kind == "docs":
                     docs_with_score = ev["docs_with_score"]
@@ -492,6 +513,8 @@ async def rag_answer_stream(request: RagRequest):
 
                 elif kind == "done":
                     trace.mark("gen_end")
+                    for stage, u in (ev.get("usage") or {}).items():
+                        trace.add_usage(stage, u)
                     clean_answer = strip_refs(full_answer)
                     trace.set(
                         answer_len=len(clean_answer),
@@ -502,6 +525,7 @@ async def rag_answer_stream(request: RagRequest):
                         "trace_id": trace.trace_id,
                         "answer_length": len(full_answer),
                         "trace": trace_data,
+                        "links": ev.get("links", []),
                     })
 
         except Exception as e:

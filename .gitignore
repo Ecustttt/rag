@@ -29,6 +29,7 @@ Thumbs.db
 # ---------- 数据：手册原稿（内部资料，谨慎公开）----------
 data/docs/*/*.docx
 data/docs/*/*.doc
+data/links/*_json
 # 其他手册格式按需补充，例如 pdf ：
 # data/docs/*/*.pdf
 

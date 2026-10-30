@@ -1,6 +1,7 @@
 import re
 import os
 from typing import Literal
+import asyncio
 
 from rank_bm25 import BM25Okapi
 from langchain_openai import OpenAIEmbeddings
@@ -12,9 +13,11 @@ from config import AppConfig
 def build_embedding(cfg: AppConfig) -> OpenAIEmbeddings:
     return OpenAIEmbeddings(
         model=cfg.embed_model,
-        openai_api_base=cfg.vllm_embed_url,
-        openai_api_key="not-needed",
+        openai_api_base=cfg.embed_base_url,
+        openai_api_key=cfg.embed_api_key or "not-needed",
         check_embedding_ctx_length=False,
+        timeout=cfg.request_timeout,
+        max_retries=cfg.max_retries,
     )
 
 
@@ -46,8 +49,10 @@ class Retriever:
         print(f">>> BM25 索引已建，共 {len(self.bm25_ids)} 条")
 
     async def vector_search(self, query, k):
-        res = self.vectorstore._collection.query(
-            query_embeddings=[self.embedding.embed_query(query)],
+        vec = await self.embedding.aembed_query(query)              # 异步
+        res = await asyncio.to_thread(                               # Chroma 同步，丢线程池
+            self.vectorstore._collection.query,
+            query_embeddings=[vec],
             n_results=k,
             include=["documents", "metadatas", "distances"],
         )

@@ -61,6 +61,7 @@ class Trace:
             "mode": mode,
             "stream": stream,
             "status": "ok",
+            "usage": {}, 
         }
 
     def mark(self, name):
@@ -80,6 +81,17 @@ class Trace:
         for name, a, b in pairs:
             if a in self._marks and b in self._marks:
                 self.data[name] = int((self._marks[b] - self._marks[a]) * 1000)
+
+    def add_usage(self, stage: str, usage_metadata):
+        """stage: intent / rewrite_v / rewrite_b / rag / direct"""
+        if not usage_metadata:
+            return
+        u = {
+            "prompt": usage_metadata.get("input_tokens", 0),
+            "completion": usage_metadata.get("output_tokens", 0),
+            "total": usage_metadata.get("total_tokens", 0),
+        }
+        self.data["usage"][stage] = u
 
     def emit(self, error=None, status=None):
         if self._done:

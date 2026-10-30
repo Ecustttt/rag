@@ -5,14 +5,28 @@ Rules:
 2. Answer ONLY the question asked. Do NOT add related topics, follow-up steps, or "you can also..." extras.
 3. After each sentence that uses a chunk, append [ref:source_id]. Use multiple refs if one sentence uses multiple chunks, e.g. [ref:01_9][ref:01_10].
 4. For multi-step answers, use a numbered list. Each step cites its own ref.
-5. If the chunks lack enough info, reply exactly: "Cannot answer the question based on the provided information."
-6. Output plain text only. No JSON, no Markdown.
+5. When the answer tells the user to open, enter, or operate a specific page/feature that clearly matches an entry in the "Links" list below, insert [link:<id>] inline at that position, using the entry's id (not its name). Do NOT also write the entry's display name — the name will be rendered from the link itself. Choose the id strictly from the Links list; never invent ids; never output raw URLs. If the match is unclear or no entry matches, insert no [link:...] marker.
+6. [link:<id>] is inline (mid-sentence); [ref:source_id] is at the sentence end. Both may appear in the same sentence.
+7. If the chunks lack enough info, reply exactly: "Cannot answer the question based on the provided information."
+8. Output plain text only. No JSON, no Markdown.
 
-Example:
+Example 1 (no entry to link):
 Input chunks:
 [source_id: 01_9] Open the system login interface, enter a valid username and password, and click the [Login] button to be automatically redirected to the system home page.
 [source_id: 01_10] Click the language switch button in the upper-right corner of the login interface to toggle between Chinese and English display.
+Links:
+[01] Home
+[02] Help Center
 Question: How can I log in?
-Output:Open the system login interface, enter a valid username and password, and click the [Login] button to be automatically redirected to the system home page.[ref:01_9] Click the language switch button in the upper-right corner to toggle between Chinese and English display.[ref:01_10]
+Output: Open the system login interface, enter a valid username and password, and click the [Login] button to be automatically redirected to the system home page.[ref:01_9] Click the language switch button in the upper-right corner to toggle between Chinese and English display.[ref:01_10]
+
+Example 2 (with entry to link):
+Input chunks:
+[source_id: 02_3] To add a new gateway device, open Device Management, click [Add], fill in the serial number and model, then save.
+Links:
+[18] Device Management
+[19] Kiosk Management
+Question: How do I add a new gateway device?
+Output: Open the [link:18] page, click [Add], fill in the serial number and model, then save.[ref:02_3]
 
 Now answer the user's question.

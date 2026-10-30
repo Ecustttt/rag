@@ -169,11 +169,25 @@ def render_sources_only(sources):
             st.caption((s.get("document") or "")[:100])
 
 
-# ---------- 按 [ref:uid] 渲染（非流式 / 历史消息） ----------
+
+
+# ---------- 按 [ref:uid] 与 [link:id] 渲染（非流式 / 历史消息） ----------
+
+LINK_PATTERN = re.compile(r"\[link:([\w\-]+)\]")
+
+def render_links(text: str, links_map: dict) -> str:
+    """把 [link:id] 替换成 <a>；id 不在 links_map 里则删掉（防幻觉）"""
+    def _repl(m):
+        link = links_map.get(m.group(1))
+        if not link:
+            return ""
+        return f'<a href="{link["url"]}" target="_blank">{link["name"]}</a>'
+    return LINK_PATTERN.sub(_repl, text)
+
 REF_PATTERN = re.compile(r"\[ref:([\w\-]+)\]")
 
 
-def render_answer_with_refs(answer, sources=None, seen_uids=None):
+def render_answer_with_refs(answer, sources=None, links=None, seen_uids=None):
     """
     按 [ref:uid] 切分 answer，文字用 st.write，图片按 sources 里的 images 列表逐张渲染。
     seen_uids: 用于跨块/跨轮去重（可选）。传 None 则不去重。
@@ -181,6 +195,7 @@ def render_answer_with_refs(answer, sources=None, seen_uids=None):
     if seen_uids is None:
         seen_uids = set()
 
+    links_map = {l["id"]: l for l in (links or [])}
     images_map = build_images_map_from_sources(sources)
 
     parts = REF_PATTERN.split(answer)
@@ -189,7 +204,7 @@ def render_answer_with_refs(answer, sources=None, seen_uids=None):
         if i % 2 == 0:
             # 文字部分
             if part.strip():
-                st.write(part.strip())
+                st.markdown(render_links(part.strip(), links_map), unsafe_allow_html=True)
         else:
             # uid 部分
             uid = part
@@ -262,10 +277,12 @@ def stream_and_render(question, session_id, mode, user_id):
     answer_with_refs = ""
     seen_uids = set()
     images_map = {}
+    links_map = {}
     placeholder = st.empty()
     rendered_text = ""
     text_buffer = ""
     sources = []
+    links_map = {}
 
     try:
         with requests.post(
@@ -343,10 +360,17 @@ def stream_and_render(question, session_id, mode, user_id):
                     return answer_with_refs, sources
 
                 elif event_name == "done":
+                    links = payload.get("links", []) or []
+                    links_map = {l["id"]: l for l in links}
                     if text_buffer.strip():
                         rendered_text += text_buffer
                         placeholder.markdown(rendered_text)
                         text_buffer = ""
+                    # 用最终文字 + links 重渲染一遍（覆盖流式中的原始 [link:xx] 文本）
+                    placeholder.markdown(
+                        render_links(rendered_text, links_map),
+                        unsafe_allow_html=True,
+                    )  
                     break
 
     except Exception as e:
@@ -366,7 +390,7 @@ def stream_and_render(question, session_id, mode, user_id):
     except Exception:
         pass
 
-    return answer_with_refs, sources
+    return answer_with_refs, sources, links
 
 
 # ---------- 非流式请求 ----------
@@ -384,7 +408,11 @@ def request_non_stream(question, session_id, mode, user_id):
         )
         resp.raise_for_status()
         data = resp.json()
-        return data.get("answer", ""), data.get("sources", [])
+        return (
+            data.get("answer", ""),
+            data.get("sources", []),
+            data.get("links", []),
+        )
     except Exception as e:
         st.error(f"请求失败：{e}")
         return "", []
@@ -398,6 +426,7 @@ for turn in st.session_state.messages:
         render_answer_with_refs(
             turn["answer"],
             sources=turn.get("sources", []),
+            links=turn.get("links", []),
             seen_uids=set(),
         )
         render_sources_only(turn.get("sources", []))
@@ -413,7 +442,7 @@ if question and question.strip():
 
     with st.chat_message("assistant"):
         if stream_mode:
-            answer, sources = stream_and_render(
+            answer, sources, links = stream_and_render(
                 question=question,
                 session_id=st.session_state.session_id,
                 mode=mode,
@@ -421,17 +450,18 @@ if question and question.strip():
             )
         else:
             with st.spinner("正在检索并生成回答..."):
-                answer, sources = request_non_stream(
+                answer, sources, links = request_non_stream(
                     question=question,
                     session_id=st.session_state.session_id,
                     mode=mode,
                     user_id=st.session_state.user_id,
                 )
-            render_answer_with_refs(answer, sources=sources, seen_uids=set())
+            render_answer_with_refs(answer, sources=sources, links=links, seen_uids=set())
             render_sources_only(sources)
 
     st.session_state.messages.append({
         "question": question,
         "answer": answer,
         "sources": sources,
+        "links": links,
     })

@@ -35,8 +35,9 @@ data/docs/*/*.doc
 # ---------- 数据：切片产物（docx_parser.py 生成）----------
 data/docs/*_json/
 
-# ---------- 数据：抽出的插图（docx_parser.py 生成，约 97MB）----------
+# ---------- 数据：抽出的插图和链接（docx_parser.py 生成，约 97MB）----------
 data/images/
+data/links/
 
 # ---------- 数据：向量库（indexer.py 生成，换 embedding 模型需重建）----------
 data/chroma_db/

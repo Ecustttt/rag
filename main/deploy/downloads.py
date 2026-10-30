@@ -17,8 +17,8 @@ except ImportError:
 # ---- 配置 ----
 #MODEL_REPO = "tclf90/Qwen3.5-9B-AWQ"
 #MODEL_DIR = str(Path.home() / "models" / "Qwen3.5-9B-AWQ")
-MODEL_REPO = "DavidWen2025/Qwen3.5-9B-GPTQ-4bit"
-MODEL_DIR = str(Path.home() / "models" / "Qwen3.5-9B-GPTQ-4bit")
+MODEL_REPO = "OpenDataLab/MinerU2.5-Pro-2605-1.2B"
+MODEL_DIR = str(Path.home() / "models" / "MinerU2.5-Pro-2605-1.2B")
 
 
 def main():

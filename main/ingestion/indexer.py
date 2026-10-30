@@ -16,8 +16,14 @@ import argparse
 class IndexConfig:
     dataset: str = "GWM"
     chroma_root: str = "./data/chroma_db"
-    embed_base_url: str = "http://localhost:8001"
+    
+    embed_endpoint: str = "http://localhost:8001/v1/embeddings"
     embed_model: str = "qwen3-embedding-0.6b"
+    embed_api_key: str = field(default_factory=lambda: os.getenv("EMBED_API_KEY", ""))
+
+    embed_timeout: float = 60.0
+    embed_max_retries: int = 3
+
     batch_size: int = 32
     hnsw_space: str = "cosine"
 
@@ -99,7 +105,8 @@ def run_index(docs_dir: str, cfg: IndexConfig = None):
         metadata={"hnsw:space": cfg.hnsw_space},
     )
 
-    embed_client = EmbeddingClient(cfg.embed_base_url, cfg.embed_model)
+    embed_client = EmbeddingClient(
+    cfg.embed_endpoint, cfg.embed_model, cfg.embed_api_key, cfg.embed_timeout, cfg.embed_max_retries)
 
     json_files = sorted(Path(docs_dir).glob("*.json"))
     print(f"找到 {len(json_files)} 个 JSON 文件\n")
